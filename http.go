@@ -48,81 +48,18 @@ func HttpWithRetry(r uint) ReqOption {
 }
 
 func HttpGetReqPersist(url string, opts ...ReqOption) ([]byte, error) {
-	// set default options
-	options := options{
-		timeout:  60,
-		retrials: 20,
-	}
-
-	for _, o := range opts {
-		o.apply(&options)
-	}
-
-	spaceClient := http.Client{
-		Timeout: time.Second * options.timeout,
-	}
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, h := range options.httpHeaders {
-		for k, v := range h {
-			req.Header.Set(k, v)
-		}
-	}
-
-	var reqErr error
-	var statusCode int
-
-	for retry := uint(0); retry < options.retrials; retry++ {
-
-		res, reqErr := spaceClient.Do(req)
-		if res != nil {
-			statusCode = res.StatusCode
-		}
-
-		if reqErr != nil || statusCode != 200 {
-
-			if e, ok := reqErr.(net.Error); !ok || !e.Timeout() {
-				if reqErr == nil {
-					resBody := []byte{}
-					if res != nil && res.Body != nil {
-						resBody, _ = ioutil.ReadAll(res.Body)
-					}
-
-					reqErr = NewErrorf(statusCode, "http error: %d %v \n%s", statusCode, e, resBody)
-				}
-				return nil, reqErr
-			}
-
-			fmt.Printf("Retry: %d\n", retry+1)
-			// Let's wait for a while and try again
-			time.Sleep(250 * time.Millisecond)
-			continue
-
-		}
-
-		if res.Body != nil {
-			defer res.Body.Close()
-		}
-
-		body, reqErr := ioutil.ReadAll(res.Body)
-		if reqErr != nil {
-			return nil, reqErr
-		}
-		return body, nil
-	}
-
-	if reqErr == nil {
-		reqErr = NewErrorf(statusCode, "http error")
-	}
-
-	return nil, reqErr
+	return HttpReqPersist(url, nil, http.MethodGet, opts...)
 }
 
 func HttpPostReqPersist(url string, payload io.Reader, opts ...ReqOption) ([]byte, error) {
+	return HttpReqPersist(url, payload, http.MethodPost, opts...)
+}
+
+func HttpPutReqPersist(url string, payload io.Reader, opts ...ReqOption) ([]byte, error) {
+	return HttpReqPersist(url, payload, http.MethodPut, opts...)
+}
+
+func HttpReqPersist(url string, payload io.Reader, method string, opts ...ReqOption) ([]byte, error) {
 	// set default options
 	options := options{
 		timeout:  60,
@@ -137,7 +74,7 @@ func HttpPostReqPersist(url string, payload io.Reader, opts ...ReqOption) ([]byt
 		Timeout: time.Second * options.timeout,
 	}
 
-	req, err := http.NewRequest(http.MethodPost, url, payload)
+	req, err := http.NewRequest(method, url, payload)
 	if err != nil {
 		return nil, err
 	}
