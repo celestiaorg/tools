@@ -1,6 +1,9 @@
 package tools
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+)
 
 // CodeError is a error with a code (like 404 Not Found).
 type CodeError struct {
@@ -24,4 +27,11 @@ func NewErrorf(code int, format string, a ...interface{}) error {
 		Code: code,
 		Text: fmt.Sprintf(format, a...),
 	}
+}
+
+func IsErrNotfound(err error) bool {
+	if e, ok := err.(CodeError); ok {
+		return e.Code == http.StatusNotFound
+	}
+	return false
 }
