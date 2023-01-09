@@ -35,3 +35,17 @@ func IsErrNotfound(err error) bool {
 	}
 	return false
 }
+
+func IsErrTooManyRequests(err error) bool {
+	if e, ok := err.(CodeError); ok {
+		return e.Code == http.StatusTooManyRequests
+	}
+	return false
+}
+
+func IsErrCode(err error, code int) bool {
+	if e, ok := err.(CodeError); ok {
+		return e.Code == code
+	}
+	return false
+}
