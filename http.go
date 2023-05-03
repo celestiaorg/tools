@@ -151,3 +151,17 @@ func ReadAll(rc io.ReadCloser) ([]byte, error) {
 
 	return ioutil.ReadAll(rc)
 }
+
+func GetUserIP(req *http.Request) string {
+	ip := req.Header.Get("CF-Connecting-IP")
+	if ip == "" {
+		ip = req.Header.Get("X-Real-Ip")
+	}
+	if ip == "" {
+		ip = req.Header.Get("X-Forwarded-For")
+	}
+	if ip == "" {
+		ip, _, _ = net.SplitHostPort(req.RemoteAddr)
+	}
+	return ip
+}
